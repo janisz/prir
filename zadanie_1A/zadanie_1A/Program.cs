@@ -18,7 +18,7 @@ namespace zadanie_1A
     class Peoples
     {
         private static Random random = new Random();
-        private static Line line = new Line();
+        private static Counter counter = new Counter();
         private const int MinPreparationTime = 1;
         private const int MaxPreparationTime = 500;
 
@@ -44,13 +44,13 @@ namespace zadanie_1A
             switch ((CookType)t)
             {
                 case CookType.Desserts:
-                    Cook(line.DessertsFull, line.DessertsEmpty, t);
+                    Cook(counter.DessertsFull, counter.DessertsEmpty, t);
                     break;
                 case CookType.Soups:
-                    Cook(line.SoupsFull, line.SoupsEmpty, t);
+                    Cook(counter.SoupsFull, counter.SoupsEmpty, t);
                     break;
                 case CookType.MainCourses:
-                    Cook(line.MainCoursesFull, line.MainCoursesEmpty, t);
+                    Cook(counter.MainCoursesFull, counter.MainCoursesEmpty, t);
                     break;
             }
         }
@@ -82,14 +82,13 @@ namespace zadanie_1A
 
         }
 
-
     }
 
-    class Line
+    class Counter
     {
         private const int counterSize = 4;
 
-        public Semaphore women = new Semaphore(1, 1);
+        public Semaphore women = new Semaphore(0, 1);
 
         public Semaphore DessertsFull = new Semaphore(0, counterSize);
         public Semaphore SoupsFull = new Semaphore(0, counterSize);
@@ -98,6 +97,7 @@ namespace zadanie_1A
         public Semaphore DessertsEmpty = new Semaphore(counterSize, counterSize);
         public Semaphore SoupsEmpty = new Semaphore(counterSize, counterSize);
         public Semaphore MainCoursesEmpty = new Semaphore(counterSize, counterSize);
+        
     }
 
     class Program

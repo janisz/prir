@@ -82,7 +82,9 @@ namespace zadanie_1A
             {
                 semaphoreEmpty.WaitOne();
                 Thread.Sleep(prepareTime);
+                
                 System.Console.WriteLine("Cook [{0}]: \t {1}", Id, type);
+                
                 semaphoreFull.Release();
             }
 
@@ -149,22 +151,24 @@ namespace zadanie_1A
 
         private void Woman()
         {
-            System.Console.WriteLine("Woman [{0}]:\t come", Id);
-            bool hasEaten = false;
-            counter.incWomenCount();
+            int womenCount = counter.incWomenCount();
+            System.Console.WriteLine("WOMAN [{0}]:\t come \n There is {1} women in queue", Id, womenCount);
+
+            bool hasEaten = false;            
             while (!hasEaten)
             {
                 counter.Tray.WaitOne();
                 counter.MainCoursesFull.WaitOne();
                 counter.DessertsFull.WaitOne();
-                System.Console.WriteLine("Woman [{0}]:\t served", Id);
+                System.Console.WriteLine("WOMAN [{0}]:\t served", Id);
                 hasEaten = true;
                 counter.DessertsEmpty.Release();
                 counter.MainCoursesEmpty.Release();
                 counter.Tray.Release();
             }
             counter.decWomenCount();
-            System.Console.WriteLine("Woman [{0}]:\t gone", Id);
+           
+            System.Console.WriteLine("WOMAN [{0}]:\t gone", Id);            
         }
 
     }
@@ -202,11 +206,12 @@ namespace zadanie_1A
             Women.Release();
         }
 
-        public void incWomenCount()
-        {
+        public int incWomenCount()
+        {            
             Women.WaitOne();
-            womenCount++;
+            int ret = ++womenCount;
             Women.Release();
+            return ret;
         }
 
         public void decWomenCount()
@@ -226,6 +231,8 @@ namespace zadanie_1A
             int m = 4;
             int k = 5;
 
+            int nextPersonComeTime = 100;
+
             var peoples = new Peoples();
 
             for (int i = 0; i < n; ++i)
@@ -244,11 +251,11 @@ namespace zadanie_1A
                 tc.Start(CookType.Desserts);
             }
 
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i < 100; i++)
             {
                 Thread tc = new Thread(peoples.NextPerson);
                 tc.Start();
-                Thread.Sleep(100);
+                Thread.Sleep(new Random().Next(nextPersonComeTime));
             }
         }
     }

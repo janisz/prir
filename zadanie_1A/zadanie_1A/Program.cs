@@ -82,9 +82,9 @@ namespace zadanie_1A
             {
                 semaphoreEmpty.WaitOne();
                 Thread.Sleep(prepareTime);
-                
+
                 System.Console.WriteLine("Cook [{0}]: \t {1}", Id, type);
-                
+
                 semaphoreFull.Release();
             }
 
@@ -154,7 +154,7 @@ namespace zadanie_1A
             int womenCount = counter.incWomenCount();
             System.Console.WriteLine("WOMAN [{0}]:\t come \n There is {1} women in queue", Id, womenCount);
 
-            bool hasEaten = false;            
+            bool hasEaten = false;
             while (!hasEaten)
             {
                 counter.Tray.WaitOne();
@@ -167,8 +167,8 @@ namespace zadanie_1A
                 counter.Tray.Release();
             }
             counter.decWomenCount();
-           
-            System.Console.WriteLine("WOMAN [{0}]:\t gone", Id);            
+
+            System.Console.WriteLine("WOMAN [{0}]:\t gone", Id);
         }
 
     }
@@ -207,7 +207,7 @@ namespace zadanie_1A
         }
 
         public int incWomenCount()
-        {            
+        {
             Women.WaitOne();
             int ret = ++womenCount;
             Women.Release();

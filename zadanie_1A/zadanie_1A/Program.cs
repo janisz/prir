@@ -10,29 +10,38 @@ namespace zadanie_1A
 
     public enum CookType
     {
-        Desserts,
-        Soups,
-        MainCourses
+        Desserts, Soups, MainCourses
+    }
+
+    public enum PersonType
+    {
+        Miner, Child, Women
     }
 
     class Peoples
     {
-        private static Random random = new Random();
-        private static Counter counter = new Counter();
+        private Random random = new Random();
+        private Counter counter = new Counter();
         private const int MinPreparationTime = 1;
         private const int MaxPreparationTime = 500;
 
-        private static int prepareTime
+        private int prepareTime
         {
-            get 
-            { 
-                return random.Next(MinPreparationTime, MaxPreparationTime); 
+            get
+            {
+                return random.Next(MinPreparationTime, MaxPreparationTime);
             }
         }
 
-        private static int Id 
+        public T RandomEnum<T>()
         {
-            get 
+            T[] values = (T[])Enum.GetValues(typeof(T));
+            return values[random.Next(0, values.Length)];
+        }
+
+        private static int Id
+        {
+            get
             {
                 return Thread.CurrentThread.ManagedThreadId;
             }
@@ -55,8 +64,20 @@ namespace zadanie_1A
             }
         }
 
+        public void NextPerson()
+        {
+            PersonType person = RandomEnum<PersonType>();
+            switch (person)
+            {
+                case PersonType.Miner: Miner(); break;
+                case PersonType.Child: Child(); break;
+                case PersonType.Women: Woman(); break;
+            }
+        }
+
         private void Cook(Semaphore semaphoreFull, Semaphore semaphoreEmpty, CookType type)
         {
+            System.Console.WriteLine("Cook [{0}]: \t Created", Id, type);
             while (true)
             {
                 semaphoreEmpty.WaitOne();
@@ -67,19 +88,83 @@ namespace zadanie_1A
 
         }
 
-        public void Miner()
+        private void Miner()
         {
-
+            System.Console.WriteLine("Miner [{0}]:\t come", Id);
+            bool hasEaten = false;
+            while (!hasEaten)
+            {
+                counter.Tray.WaitOne();
+                if (counter.getWomenCount() == 0)
+                {
+                    counter.SoupsFull.WaitOne();
+                    if (counter.getWomenCount() == 0)
+                    {
+                        counter.MainCoursesFull.WaitOne();
+                        if (counter.getWomenCount() == 0)
+                        {
+                            counter.DessertsFull.WaitOne();
+                            if (counter.getWomenCount() == 0)
+                            {
+                                System.Console.WriteLine("Miner [{0}]:\t served", Id);
+                                hasEaten = true;
+                            }
+                            counter.DessertsEmpty.Release();
+                        }
+                        counter.MainCoursesEmpty.Release();
+                    }
+                    counter.SoupsEmpty.Release();
+                }
+                counter.Tray.Release();
+            }
+            System.Console.WriteLine("Miner [{0}]:\t gone", Id);
         }
 
-        public void Child()
+        private void Child()
         {
-
+            System.Console.WriteLine("Child [{0}]:\t come", Id);
+            bool hasEaten = false;
+            while (!hasEaten)
+            {
+                counter.Tray.WaitOne();
+                if (counter.getWomenCount() == 0)
+                {
+                    counter.SoupsFull.WaitOne();
+                    if (counter.getWomenCount() == 0)
+                    {
+                        counter.DessertsFull.WaitOne();
+                        if (counter.getWomenCount() == 0)
+                        {
+                            System.Console.WriteLine("Child [{0}]:\t served", Id);
+                            hasEaten = true;
+                        }
+                        counter.DessertsEmpty.Release();
+                    }
+                    counter.SoupsEmpty.Release();
+                }
+                counter.Tray.Release();
+            }
+            System.Console.WriteLine("Child [{0}]:\t gone", Id);
         }
 
-        public void Woman()
+        private void Woman()
         {
-
+            System.Console.WriteLine("Woman [{0}]:\t come", Id);
+            bool hasEaten = false;
+            counter.incWomenCount();
+            while (!hasEaten)
+            {
+                counter.Tray.WaitOne();
+                counter.MainCoursesFull.WaitOne();
+                counter.DessertsFull.WaitOne();
+                System.Console.WriteLine("Woman [{0}]:\t served", Id);
+                hasEaten = true;
+                counter.DessertsEmpty.Release();
+                counter.MainCoursesEmpty.Release();
+                counter.Tray.Release();
+            }
+            counter.decWomenCount();
+            System.Console.WriteLine("Woman [{0}]:\t gone", Id);
         }
 
     }
@@ -88,7 +173,9 @@ namespace zadanie_1A
     {
         private const int counterSize = 4;
 
-        public Semaphore women = new Semaphore(0, 1);
+        private int womenCount = 0;
+
+        public Semaphore Women = new Semaphore(1, 1);
 
         public Semaphore DessertsFull = new Semaphore(0, counterSize);
         public Semaphore SoupsFull = new Semaphore(0, counterSize);
@@ -97,7 +184,38 @@ namespace zadanie_1A
         public Semaphore DessertsEmpty = new Semaphore(counterSize, counterSize);
         public Semaphore SoupsEmpty = new Semaphore(counterSize, counterSize);
         public Semaphore MainCoursesEmpty = new Semaphore(counterSize, counterSize);
-        
+
+        public Semaphore Tray = new Semaphore(counterSize, counterSize);
+
+        public int getWomenCount()
+        {
+            Women.WaitOne();
+            int ret = womenCount;
+            Women.Release();
+            return ret;
+        }
+
+        public void setWomenCount(int newWomenCount)
+        {
+            Women.WaitOne();
+            womenCount = newWomenCount;
+            Women.Release();
+        }
+
+        public void incWomenCount()
+        {
+            Women.WaitOne();
+            womenCount++;
+            Women.Release();
+        }
+
+        public void decWomenCount()
+        {
+            Women.WaitOne();
+            womenCount--;
+            Women.Release();
+        }
+
     }
 
     class Program
@@ -124,6 +242,13 @@ namespace zadanie_1A
             {
                 Thread tc = new Thread(new ParameterizedThreadStart(peoples.Cook));
                 tc.Start(CookType.Desserts);
+            }
+
+            for (int i = 0; i < 5; i++)
+            {
+                Thread tc = new Thread(peoples.NextPerson);
+                tc.Start();
+                Thread.Sleep(100);
             }
         }
     }

@@ -42,7 +42,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Counter.cs" />
-    <Compile Include="Peoples.cs" />
+    <Compile Include="Peoples\Child.cs" />
+    <Compile Include="Peoples\Cook.cs" />
+    <Compile Include="Peoples\IPeople.cs" />
+    <Compile Include="Peoples\Miner.cs" />
+    <Compile Include="Peoples\PeopleFactory.cs" />
+    <Compile Include="Peoples\Peoples.cs" />
+    <Compile Include="Peoples\Woman.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

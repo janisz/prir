@@ -28,27 +28,29 @@ namespace zadanie_1A
 
             int nextPersonComeTime = 100;
 
-            var peoples = new Peoples();
-
             for (int i = 0; i < n; ++i)
             {
-                Thread tc = new Thread(new ParameterizedThreadStart(peoples.Cook));
-                tc.Start(CookType.Soups);
+                var cook = PeopleFactory.getCook(CookType.Soups);
+                Thread tc = new Thread(cook.Run);
+                tc.Start();
             }
             for (int i = 0; i < m; ++i)
             {
-                Thread tc = new Thread(new ParameterizedThreadStart(peoples.Cook));
-                tc.Start(CookType.MainCourses);
+                var cook = PeopleFactory.getCook(CookType.MainCourses);
+                Thread tc = new Thread(cook.Run);
+                tc.Start();
             }
             for (int i = 0; i < k; ++i)
             {
-                Thread tc = new Thread(new ParameterizedThreadStart(peoples.Cook));
-                tc.Start(CookType.Desserts);
+                var cook = PeopleFactory.getCook(CookType.Desserts);
+                Thread tc = new Thread(cook.Run);
+                tc.Start();
             }
 
             for (int i = 0; i < 100; i++)
             {
-                Thread tc = new Thread(peoples.NextPerson);
+                var person = PeopleFactory.getNextClient();
+                Thread tc = new Thread(person.Run);
                 tc.Start();
                 Thread.Sleep(new Random().Next(nextPersonComeTime));
             }

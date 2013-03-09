@@ -9,6 +9,21 @@ namespace zadanie_1A
 {
     class Counter
     {
+        private static Counter instance;
+        private Counter() { }
+
+        public static Counter Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new Counter();
+                }
+                return instance;
+            }
+        }
+
         private const int counterSize = 4;
 
         private int womenCount = 0;

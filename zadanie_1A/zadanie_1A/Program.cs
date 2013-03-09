@@ -96,28 +96,23 @@ namespace zadanie_1A
             bool hasEaten = false;
             while (!hasEaten)
             {
-                counter.Tray.WaitOne();
+                counter.SoupsFull.WaitOne();
                 if (counter.getWomenCount() == 0)
                 {
-                    counter.SoupsFull.WaitOne();
+                    counter.MainCoursesFull.WaitOne();
                     if (counter.getWomenCount() == 0)
                     {
-                        counter.MainCoursesFull.WaitOne();
-                        if (counter.getWomenCount() == 0)
-                        {
-                            counter.DessertsFull.WaitOne();
-                            if (counter.getWomenCount() == 0)
-                            {
-                                System.Console.WriteLine("Miner [{0}]:\t served", Id);
-                                hasEaten = true;
-                            }
-                            counter.DessertsEmpty.Release();
-                        }
-                        counter.MainCoursesEmpty.Release();
+                        counter.DessertsFull.WaitOne();
+
+                        System.Console.WriteLine("Miner [{0}]:\t served", Id);
+                        hasEaten = true;
+
+                        counter.DessertsEmpty.Release();
                     }
-                    counter.SoupsEmpty.Release();
+                    counter.MainCoursesEmpty.Release();
                 }
-                counter.Tray.Release();
+                counter.SoupsEmpty.Release();
+
             }
             System.Console.WriteLine("Miner [{0}]:\t gone", Id);
         }
@@ -128,23 +123,17 @@ namespace zadanie_1A
             bool hasEaten = false;
             while (!hasEaten)
             {
-                counter.Tray.WaitOne();
+                counter.SoupsFull.WaitOne();
                 if (counter.getWomenCount() == 0)
                 {
-                    counter.SoupsFull.WaitOne();
-                    if (counter.getWomenCount() == 0)
-                    {
-                        counter.DessertsFull.WaitOne();
-                        if (counter.getWomenCount() == 0)
-                        {
-                            System.Console.WriteLine("Child [{0}]:\t served", Id);
-                            hasEaten = true;
-                        }
-                        counter.DessertsEmpty.Release();
-                    }
-                    counter.SoupsEmpty.Release();
+                    counter.DessertsFull.WaitOne();
+
+                    System.Console.WriteLine("Child [{0}]:\t served", Id);
+                    hasEaten = true;
+
+                    counter.DessertsEmpty.Release();
                 }
-                counter.Tray.Release();
+                counter.SoupsEmpty.Release();
             }
             System.Console.WriteLine("Child [{0}]:\t gone", Id);
         }
@@ -154,18 +143,12 @@ namespace zadanie_1A
             int womenCount = counter.incWomenCount();
             System.Console.WriteLine("WOMAN [{0}]:\t come \n There is {1} women in queue", Id, womenCount);
 
-            bool hasEaten = false;
-            while (!hasEaten)
-            {
-                counter.Tray.WaitOne();
-                counter.MainCoursesFull.WaitOne();
-                counter.DessertsFull.WaitOne();
-                System.Console.WriteLine("WOMAN [{0}]:\t served", Id);
-                hasEaten = true;
-                counter.DessertsEmpty.Release();
-                counter.MainCoursesEmpty.Release();
-                counter.Tray.Release();
-            }
+            counter.MainCoursesFull.WaitOne();
+            counter.DessertsFull.WaitOne();
+            System.Console.WriteLine("WOMAN [{0}]:\t served", Id);
+            counter.DessertsEmpty.Release();
+            counter.MainCoursesEmpty.Release();
+
             counter.decWomenCount();
 
             System.Console.WriteLine("WOMAN [{0}]:\t gone", Id);
@@ -188,8 +171,6 @@ namespace zadanie_1A
         public Semaphore DessertsEmpty = new Semaphore(counterSize, counterSize);
         public Semaphore SoupsEmpty = new Semaphore(counterSize, counterSize);
         public Semaphore MainCoursesEmpty = new Semaphore(counterSize, counterSize);
-
-        public Semaphore Tray = new Semaphore(counterSize, counterSize);
 
         public int getWomenCount()
         {

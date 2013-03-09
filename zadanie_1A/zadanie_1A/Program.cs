@@ -175,22 +175,15 @@ namespace zadanie_1A
         public int getWomenCount()
         {
             Women.WaitOne();
-            int ret = womenCount;
+            int ret = womenCount;            
             Women.Release();
             return ret;
-        }
-
-        public void setWomenCount(int newWomenCount)
-        {
-            Women.WaitOne();
-            womenCount = newWomenCount;
-            Women.Release();
         }
 
         public int incWomenCount()
         {
             Women.WaitOne();
-            int ret = ++womenCount;
+            int ret = ++womenCount;           
             Women.Release();
             return ret;
         }

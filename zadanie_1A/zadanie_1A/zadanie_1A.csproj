@@ -47,7 +47,7 @@
     <Compile Include="Peoples\IPeople.cs" />
     <Compile Include="Peoples\Miner.cs" />
     <Compile Include="Peoples\PeopleFactory.cs" />
-    <Compile Include="Peoples\Peoples.cs" />
+    <Compile Include="Peoples\People.cs" />
     <Compile Include="Peoples\Woman.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

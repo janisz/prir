@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace zadanie_1A
 {
-    class Cook : Peoples, IPeople
+    class Cook : People, IPeople
     {
         Semaphore semaphoreEmpty;
         Semaphore semaphoreFull;

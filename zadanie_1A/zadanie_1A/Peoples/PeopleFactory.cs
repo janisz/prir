@@ -18,7 +18,7 @@ namespace zadanie_1A
             {
                 case PersonType.Miner: return new Miner();
                 case PersonType.Child: return new Child();
-                case PersonType.Women: return new Woman();
+                case PersonType.Woman: return new Woman();
             }
 
             throw new IndexOutOfRangeException();

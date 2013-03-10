@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace zadanie_1A
 {
-    class Miner : Peoples, IPeople
+    class Miner : People, IPeople
     {
         public void Run()
         {

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace zadanie_1A
 {
-    class Child : Peoples, IPeople
+    class Child : People, IPeople
     {
         public void Run()
         {

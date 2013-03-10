@@ -15,7 +15,7 @@ namespace zadanie_1A
 
     public enum PersonType
     {
-        Miner, Child, Women
+        Miner, Child, Woman
     }
 
     class Program
@@ -54,6 +54,10 @@ namespace zadanie_1A
                 tc.Start();
                 Thread.Sleep(new Random().Next(nextPersonComeTime));
             }
+
+            Thread.Sleep(10000);
+
+            Environment.Exit(0);
         }
     }
 }

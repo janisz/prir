@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace zadanie_1A
 {
-    class Peoples
+    class People
     {
         protected Random random = new Random();
         protected Counter counter = Counter.Instance;

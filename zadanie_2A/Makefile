@@ -1,4 +1,4 @@
-CC := gcc
+CC := color-gcc
 CFLAGS := -Wall -pedantic -std=gnu99 
 LFLAGS := -lpthread
 

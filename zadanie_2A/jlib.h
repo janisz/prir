@@ -1,15 +1,30 @@
+#ifndef JLIB_H_GUARD
+#define JLIB_H_GUARD
+
+#define _GNU_SOURCE
+#include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include <time.h>
 
 #define KING 0
-#define KNIGHT_NAME_SIZE 15
+#define NAME_SIZE 15
+#define NEIGHBORS_COUNT 2
+#define LEFT  0
+#define RIGHT 1
+#define MAX_ROUND 10
 //Time in miliseconds
 #define WAITER_INTERVAL 1000
 #define MAX_TALKING_TIME 500
 #define MIN_TALKING_TIME 100
 #define TALKING_TIME ((rand() % (MAX_TALKING_TIME - MIN_TALKING_TIME)) + MIN_TALKING_TIME)
 
-#define TRUE (!FALSE)
+#define RANDOM_BOOL ((rand() % 2))
+
 #define FALSE (0)
+#define TRUE (!FALSE)
 
 #define ARRAY_SIZE(a) (sizeof(a) / sizeof(*a))
 #define FOREACH(item, array) \
@@ -22,5 +37,19 @@
 
 
 typedef struct {
-	int  id;
+	int id;
+	int people_count;
+	int *bowl_state;
+	int *pitcher_state;
+	int *table_state;
+	pthread_cond_t *cond;
+	pthread_mutex_t *bowl_m;
+	pthread_mutex_t *pitcher_m;
+	pthread_mutex_t *table_m;
+	pthread_mutex_t *king_m;
 } ThreadData;
+
+void init_mutex(int size,  ...);
+void destroy_mutex(int size,  ...);
+
+#endif

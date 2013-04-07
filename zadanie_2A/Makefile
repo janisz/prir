@@ -31,7 +31,7 @@ program.o: program.c jlib.h
 	$(CC) -c $(CFLAGS)  program.c -o program.o
 
 jlib.o: jlib.c jlib.h
-	$(CC) -c $(CFLAGS)  jlib.c -o jlib.o
+	$(CC) -c $(CFLAGS)  jlib.c -o jlib.o 
 
 style: clean
 	astyle -A8 -t *.c *.h

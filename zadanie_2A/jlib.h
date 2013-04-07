@@ -27,10 +27,11 @@
 #define WAITER_INTERVAL 1000
 #define MAX_TALKING_TIME 500
 #define MIN_TALKING_TIME 100
-#define TALKING_TIME ((rand() % (MAX_TALKING_TIME - MIN_TALKING_TIME)) + MIN_TALKING_TIME)
+#define SEED (getpid() * time(NULL) * (pthread_self() + 1));
+#define TALKING_TIME ((random_number() % (MAX_TALKING_TIME - MIN_TALKING_TIME)) + MIN_TALKING_TIME)
 #define EATING_TIME TALKING_TIME
 
-#define RANDOM_BOOL ((rand() % 2))
+#define RANDOM_BOOL ((random_number() % 2))
 
 #define FALSE (0)
 #define TRUE (!FALSE)
@@ -64,5 +65,6 @@ typedef struct {
 
 void init_mutex(int size,  ...);
 void destroy_mutex(int size,  ...);
+int random_number();
 
 #endif

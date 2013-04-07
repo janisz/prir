@@ -18,15 +18,14 @@ void set_table_state_and_broadcast(ThreadData data, int state)
 {
 //	pthread_mutex_lock(data.table_m);
 	data.table_state[data.id] = state;
-//	pthread_cond_broadcast(&data.cond[KING]);
+	pthread_cond_broadcast(&data.cond[0]);
+	pthread_cond_broadcast(&data.cond[1]);
 //	pthread_mutex_unlock(data.table_m);
 }
 
 int can_eat(ThreadData data)
 {
-	if (data.table_state[KING] == IS_TALKING ||
-	    data.table_state[left(data.id, data.people_count)]  > ACTIVE ||
-	    data.table_state[right(data.id, data.people_count)] > ACTIVE) {		
+	if (data.table_state[KING] == IS_TALKING) {
 		return FALSE;
 	}
 
@@ -35,9 +34,7 @@ int can_eat(ThreadData data)
 
 int can_talk(ThreadData data)
 {
-	if (data.table_state[KING] == IS_TALKING ||
-	    data.table_state[left(data.id, data.people_count)]  == IS_TALKING ||
-	    data.table_state[right(data.id, data.people_count)] == IS_TALKING) {		
+	if (data.table_state[KING] == IS_TALKING) {
 		return FALSE;
 	}
 
@@ -59,7 +56,56 @@ void quit_party(ThreadData data)
 	static int n;
 	set_table_state_and_broadcast(data, UNACTIVE);
 	n++;
+	print_table_state(data);
 	printf("%s finish %d\n", data.name, n);
+}
+
+#define CUP  (((data.id%2) + data.id)%data.people_count)
+#define CUCUMBER ((((data.id+1)%2) + data.id)%data.people_count)
+
+#define LEFT  CUCUMBER // (MIN((data.id), ((data.id+1)%data.people_count)))
+#define RIGHT CUP //(MAX((data.id), ((data.id+1)%data.people_count)))	
+
+void lock_table_mutex(ThreadData data)
+{
+
+	pthread_mutex_lock(&data.table_m[RIGHT]);
+	fprintf(stderr, "%s lock RIGHT\n", data.name);
+	pthread_mutex_lock(&data.table_m[LEFT]);
+	fprintf(stderr, "%s lock LEFT\n", data.name);
+
+}
+
+void unlock_table_mutex(ThreadData data)
+{
+	pthread_mutex_unlock(&data.table_m[LEFT]);
+	pthread_mutex_unlock(&data.table_m[RIGHT]);
+	fprintf(stderr, "%s unlocked table mutex\n", data.name);
+}
+
+void lock_cup_and_plate_mutex(ThreadData data)
+{
+	pthread_mutex_lock(&data.cup_m[CUP]);
+	fprintf(stderr, "%s lock CUP\n", data.name);
+	pthread_mutex_lock(&data.cup_m[CUCUMBER]);
+	fprintf(stderr, "%s lock CUMCUMBER\n", data.name);
+}
+
+void unlock_cup_and_plate_mutex(ThreadData data)
+{
+	pthread_mutex_unlock(&data.cup_m[CUCUMBER]);
+	pthread_mutex_unlock(&data.cup_m[CUP]);
+	fprintf(stderr, "%s unlocked CUP adn PLATE\n", data.name);
+}
+
+void unlock_mutex_and_broadcast(ThreadData data)
+{
+	for (int i=0; i<data.people_count/2; i++)
+		pthread_cond_signal(&data.cond[1]);
+	unlock_cup_and_plate_mutex(data);
+	for (int i=0; i<data.people_count/2; i++)
+		pthread_cond_signal(&data.cond[0]);
+	unlock_table_mutex(data);
 }
 
 void *Knight(void* thread_data)
@@ -70,18 +116,14 @@ void *Knight(void* thread_data)
 
 	data.round = 0;
 
-#define LEFT  (MIN((data.id), ((data.id+1)%data.people_count)))
-#define RIGHT (MAX((data.id), ((data.id+1)%data.people_count)))
-
 	while (data.round < MAX_ROUND) {
 		int want_to_talk = RANDOM_BOOL;
 		int repeat = 1;
 
-		pthread_mutex_lock(&data.table_m[RIGHT]);
-		pthread_mutex_lock(&data.table_m[LEFT]);
+		lock_table_mutex(data);
 
 		do {
-			if (!repeat) break;
+
 			if (want_to_talk && (can_talk(data))) {
 				data.table_state[data.id] = IS_TALKING;
 				talk(data.name);
@@ -89,8 +131,7 @@ void *Knight(void* thread_data)
 				break;
 			} else if (!want_to_talk) {
 
-				pthread_mutex_lock(&data.cup_m[RIGHT]);
-				pthread_mutex_lock(&data.cup_m[LEFT]);
+				lock_cup_and_plate_mutex(data);
 
 				do {
 					if (can_eat(data)) {
@@ -101,24 +142,16 @@ void *Knight(void* thread_data)
 						repeat = 0;
 						break;
 					} else {
-						pthread_cond_wait(&data.cond[1], &data.cup_m[LEFT]);
+						pthread_cond_wait(&data.cond[1], &data.cup_m[CUCUMBER]);
 					}
 				} while (1);
-				pthread_cond_broadcast(&data.cond[1]);
-
-				pthread_mutex_unlock(&data.cup_m[RIGHT]);
-				pthread_mutex_unlock(&data.cup_m[LEFT]);
 
 				if (!repeat) break;
 			} else {
-				pthread_cond_wait(&data.cond[1], &data.table_m[LEFT]);
+				pthread_cond_wait(&data.cond[0], &data.table_m[LEFT]);
 			}
 		} while (repeat);
-		pthread_cond_broadcast(&data.cond[1]);
-
-		pthread_mutex_unlock(&data.table_m[RIGHT]);
-		pthread_mutex_unlock(&data.table_m[LEFT]);
-
+		unlock_mutex_and_broadcast(data);
 	}
 
 	quit_party(data);

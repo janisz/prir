@@ -23,3 +23,9 @@ void destroy_mutex(int size,  ...)
 
 	va_end(ap);
 }
+
+int random_number()
+{
+	unsigned seed = SEED;
+	return rand_r(&seed);
+}

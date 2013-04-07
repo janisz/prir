@@ -179,7 +179,7 @@ void take_food(ThreadData data)
 
 void talk(const char name[])
 {
-	int t = TALKING_TIME;
+	int t = TALKING_TIME;	
 	printf("{ %s will talk for %d ms\n", name, t);
 	usleep(t * 1000);
 	printf("} %s stop talking\n", name);

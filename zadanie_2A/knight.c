@@ -194,4 +194,5 @@ void eat(ThreadData *data)
 	int n = data->round%10 < 4 ? data->round%10 : 0;
 	printf("%s will eat&drink %.2d%s time\n", data->name, data->round, suffixes[n]);
 	usleep(t * 1000);
+	printf("%s stop eating\n", data->name);
 }

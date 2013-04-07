@@ -24,14 +24,20 @@ run: program
 
 compile: program
 
-program: program.o jlib.o
-	$(CC) -o program program.o jlib.o $(LFLAGS) 
+program: program.o jlib.o knight.o waiter.o
+	$(CC) -o program program.o jlib.o  knight.o waiter.o $(LFLAGS) 
 
-program.o: program.c jlib.h
+program.o: program.c jlib.h knight.h waiter.h
 	$(CC) -c $(CFLAGS)  program.c -o program.o
 
 jlib.o: jlib.c jlib.h
 	$(CC) -c $(CFLAGS)  jlib.c -o jlib.o 
+
+knight.o: knight.c knight.h jlib.h
+	$(CC) -c $(CFLAGS)  knight.c -o knight.o 
+	
+waiter.o: waiter.c waiter.h jlib.h
+	$(CC) -c $(CFLAGS)  waiter.c -o waiter.o
 
 style: clean
 	astyle -A8 -t *.c *.h

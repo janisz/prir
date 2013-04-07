@@ -52,7 +52,7 @@ void wait_for_meal_and_eat(ThreadData *_data)
 	} while (1);
 }
 
-int get_king_state(ThreadData data) 
+int get_king_state(ThreadData data)
 {
 	pthread_mutex_lock(data.king_m);
 	int ret = *data.king;
@@ -60,7 +60,7 @@ int get_king_state(ThreadData data)
 	return ret;
 }
 
-void set_king_state(ThreadData data, int new_value) 
+void set_king_state(ThreadData data, int new_value)
 {
 	pthread_mutex_lock(data.king_m);
 	*data.king = new_value;

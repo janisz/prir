@@ -18,7 +18,7 @@ int can_talk(ThreadData data);
 void talk(const char name[]);
 
 void set_king_state(ThreadData data, int new_value);
-int get_king_state(ThreadData data); 
+int get_king_state(ThreadData data);
 
 void quit_party(ThreadData data);
 

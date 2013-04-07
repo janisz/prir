@@ -7,63 +7,29 @@ void talk(const char name[]);
 void eat(ThreadData *data);
 void set_name(ThreadData *data);
 
-void print_table_state(ThreadData d)
-{
-	for (int i=0; i<d.people_count; i++)
-		printf("%d", d.table_state[i]);
-	printf(" %s\n", d.name);
-}
-
-void set_table_state_and_broadcast(ThreadData data, int state)
-{
-	data.table_state[data.id] = state;
-	pthread_cond_broadcast(&data.cond[0]);
-	pthread_cond_broadcast(&data.cond[1]);
-}
-
 int can_eat(ThreadData data)
 {
-	return (data.table_state[KING] != IS_TALKING);
+	return (*data.king != IS_TALKING);
 }
 
 int can_talk(ThreadData data)
 {
-	return (data.table_state[KING] != IS_TALKING);
-}
-
-int is_last(ThreadData data)
-{
-	return 1;
-	int sum = 0;
-	FOREACH(int *i, data.table_state) {
-		sum += *i;
-	}
-	return sum == 1;
+	return (*data.king != IS_TALKING);
 }
 
 void quit_party(ThreadData data)
 {
 	static int n;
-	set_table_state_and_broadcast(data, UNACTIVE);
 	n++;
-	print_table_state(data);
-	printf("%s finish %d\n", data.name, n);
+	printf("# %s finish %d\n", data.name, n);
 }
-
-#define CUP  (((data.id%2) + data.id)%data.people_count)
-#define CUCUMBER ((((data.id+1)%2) + data.id)%data.people_count)
-
-#define LEFT  CUCUMBER // (MIN((data.id), ((data.id+1)%data.people_count)))
-#define RIGHT CUP //(MAX((data.id), ((data.id+1)%data.people_count)))	
 
 void lock_table_mutex(ThreadData data)
 {
-
 	pthread_mutex_lock(&data.table_m[RIGHT]);
 	fprintf(stderr, "%s lock RIGHT\n", data.name);
 	pthread_mutex_lock(&data.table_m[LEFT]);
 	fprintf(stderr, "%s lock LEFT\n", data.name);
-
 }
 
 void unlock_table_mutex(ThreadData data)
@@ -175,6 +141,19 @@ void *Waiter(void* thread_data)
 	pthread_exit(NULL);
 }
 
+void wait_for_meal_and_eat(ThreadData *_data)
+{
+	ThreadData data = (*(ThreadData*)_data);
+	do {
+		if (can_eat(data)) {
+			eat(_data);
+			break;
+		} else {
+			pthread_cond_wait(&data.cond[1], &data.cup_m[CUCUMBER]);
+		}
+	} while (1);
+}
+
 void *Knight(void* thread_data)
 {
 	ThreadData data = (*(ThreadData*)thread_data);
@@ -188,29 +167,14 @@ void *Knight(void* thread_data)
 		int repeat = 1;
 
 		lock_table_mutex(data);
-
 		do {
-
 			if (want_to_talk && (can_talk(data))) {
-				data.table_state[data.id] = IS_TALKING;
 				talk(data.name);
-				data.table_state[data.id] = ACTIVE;
 				break;
 			} else if (!want_to_talk) {
-
 				lock_cup_and_plate_mutex(data);
-
-				do {
-					if (can_eat(data)) {
-						eat(&data);
-						repeat = 0;
-						break;
-					} else {
-						pthread_cond_wait(&data.cond[1], &data.cup_m[CUCUMBER]);
-					}
-				} while (1);
-
-				if (!repeat) break;
+				wait_for_meal_and_eat(&data);
+				break;
 			} else {
 				pthread_cond_wait(&data.cond[0], &data.table_m[LEFT]);
 			}
@@ -228,10 +192,7 @@ int main(int argc, char** argv)
 	int people_count = parse_arguments(argc, argv);
 	int bowl_state = people_count / 2;
 	int pitcher_state = people_count / 3;
-	int table_state[people_count];
-
-	for (int i=0; i<people_count; i++)
-		table_state[i] = ACTIVE;
+	int king = ACTIVE;
 
 	printf("Party started! There will be %d people\n", people_count);
 
@@ -243,15 +204,11 @@ int main(int argc, char** argv)
 	}
 	pthread_mutex_t king_mutex, bowl_mutex, pitcher_mutex;
 	pthread_mutex_t table_mutex[people_count];
-	pthread_mutex_t cucumber_mutex[people_count / 2 +1];
 	pthread_mutex_t cup_mutex[people_count];
 	pthread_t people[people_count];
 	pthread_t waiter;
 
 	FOREACH(pthread_mutex_t *t, table_mutex) {
-		pthread_mutex_init(t, NULL);
-	}
-	FOREACH(pthread_mutex_t *t, cucumber_mutex) {
 		pthread_mutex_init(t, NULL);
 	}
 	FOREACH(pthread_mutex_t *t, cup_mutex) {
@@ -262,40 +219,20 @@ int main(int argc, char** argv)
 
 
 	for (int i=0; i<people_count; i++) {
-		thread_data[i].id = i;
-		thread_data[i].cond = cond;
-		thread_data[i].people_count = people_count;
-		thread_data[i].cucumber_m = cucumber_mutex;
-		thread_data[i].cup_m = cup_mutex;
-		thread_data[i].table_m = table_mutex;
-		thread_data[i].bowl_m = &bowl_mutex;
-		thread_data[i].pitcher_m = &pitcher_mutex;
-		thread_data[i].bowl_state = &bowl_state;
-		thread_data[i].pitcher_state = &pitcher_state;
-		thread_data[i].table_state = table_state;
+		set_thread_data(&thread_data[i], i, people_count, &bowl_state, &pitcher_state, &king, cond, cup_mutex, &bowl_mutex, &pitcher_mutex, table_mutex, &king_mutex);
 		pthread_create(&people[i], NULL, Knight, (void*)&thread_data[i]);
 	}
 
-	waiter_thread_data.id = people_count;
-	waiter_thread_data.cond = cond;
-	waiter_thread_data.people_count = people_count;
-	waiter_thread_data.cucumber_m = cucumber_mutex;
-	waiter_thread_data.cup_m = cup_mutex;
-	waiter_thread_data.table_m = table_mutex;
-	waiter_thread_data.bowl_m = &bowl_mutex;
-	waiter_thread_data.pitcher_m = &pitcher_mutex;
-	waiter_thread_data.bowl_state = &bowl_state;
-	waiter_thread_data.pitcher_state = &pitcher_state;
-	waiter_thread_data.table_state = table_state;
+	set_thread_data(&waiter_thread_data, -1, people_count, &bowl_state, &pitcher_state, &king, cond, cup_mutex, &bowl_mutex, &pitcher_mutex, table_mutex, &king_mutex);
 	pthread_create(&waiter, NULL, Waiter, (void*)&waiter_thread_data);
 
 	FOREACH(pthread_t *t, people) {
 		pthread_join(*t, NULL);
 	}
+	pthread_cancel(waiter);
 	FOREACH(pthread_cond_t *c, cond) {
 		pthread_cond_destroy(c);
 	}
-
 	destroy_mutex(4, &king_mutex, &bowl_mutex, &pitcher_mutex, &table_mutex);
 
 	return 0;

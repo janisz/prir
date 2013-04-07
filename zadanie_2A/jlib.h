@@ -23,6 +23,12 @@
 #define MIN(a, b)  (((a) < (b)) ? (a) : (b))
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
+#define CUP  (((data.id%2) + data.id)%data.people_count)
+#define CUCUMBER ((((data.id+1)%2) + data.id)%data.people_count)
+
+#define LEFT  CUCUMBER // (MIN((data.id), ((data.id+1)%data.people_count)))
+#define RIGHT CUP //(MAX((data.id), ((data.id+1)%data.people_count)))	
+
 //Time in miliseconds
 #define MAX_TALKING_TIME 500
 #define MIN_TALKING_TIME 100
@@ -51,16 +57,20 @@ typedef struct {
 	int round;
 	int *bowl_state;
 	int *pitcher_state;
-	int *table_state;
+	int *king;
 	char name[NAME_SIZE];
 	pthread_cond_t *cond;
-	pthread_mutex_t *cucumber_m;
 	pthread_mutex_t *cup_m;
 	pthread_mutex_t *bowl_m;
 	pthread_mutex_t *pitcher_m;
 	pthread_mutex_t *table_m;
 	pthread_mutex_t *king_m;
 } ThreadData;
+
+void set_thread_data(ThreadData *data, int id, int people_count, int *bowl_state,
+                     int *pitcher_state, int *king, pthread_cond_t *cond,
+						pthread_mutex_t *cup_m, pthread_mutex_t *bowl_m,
+                     pthread_mutex_t *pitcher_m, pthread_mutex_t *table_m, pthread_mutex_t *king_m);
 
 void init_mutex(int size,  ...);
 void destroy_mutex(int size,  ...);

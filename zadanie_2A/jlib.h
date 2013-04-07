@@ -24,10 +24,9 @@
 #define MAX(a, b)  (((a) > (b)) ? (a) : (b))
 
 //Time in miliseconds
-#define WAITER_INTERVAL 1000
 #define MAX_TALKING_TIME 500
 #define MIN_TALKING_TIME 100
-#define SEED (getpid() * time(NULL) * (pthread_self() + 1));
+#define SEED (getpid() * time(NULL) * (pthread_self() * 31 + 1))
 #define TALKING_TIME ((random_number() % (MAX_TALKING_TIME - MIN_TALKING_TIME)) + MIN_TALKING_TIME)
 #define EATING_TIME TALKING_TIME
 

@@ -69,7 +69,7 @@ typedef struct {
 
 void set_thread_data(ThreadData *data, int id, int people_count, int *bowl_state,
                      int *pitcher_state, int *king, pthread_cond_t *cond,
-						pthread_mutex_t *cup_m, pthread_mutex_t *bowl_m,
+                     pthread_mutex_t *cup_m, pthread_mutex_t *bowl_m,
                      pthread_mutex_t *pitcher_m, pthread_mutex_t *table_m, pthread_mutex_t *king_m);
 
 void init_mutex(int size,  ...);

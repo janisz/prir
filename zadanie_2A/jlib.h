@@ -1,5 +1,5 @@
-#ifndef JLIB_H_GUARD
-#define JLIB_H_GUARD
+#ifndef JLIB_H_
+#define JLIB_H_
 
 #define _GNU_SOURCE
 #include <pthread.h>
@@ -8,18 +8,27 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
+#include <unistd.h>
 
 #define KING 0
 #define NAME_SIZE 15
 #define NEIGHBORS_COUNT 2
-#define LEFT  0
-#define RIGHT 1
 #define MAX_ROUND 10
+
+#define UNACTIVE 0
+#define ACTIVE 1
+#define IS_TALKING 3
+#define IS_EATING 5
+
+#define MIN(a, b)  (((a) < (b)) ? (a) : (b))
+#define MAX(a, b)  (((a) > (b)) ? (a) : (b))
+
 //Time in miliseconds
 #define WAITER_INTERVAL 1000
 #define MAX_TALKING_TIME 500
 #define MIN_TALKING_TIME 100
 #define TALKING_TIME ((rand() % (MAX_TALKING_TIME - MIN_TALKING_TIME)) + MIN_TALKING_TIME)
+#define EATING_TIME TALKING_TIME
 
 #define RANDOM_BOOL ((rand() % 2))
 
@@ -39,10 +48,14 @@
 typedef struct {
 	int id;
 	int people_count;
+	int round;
 	int *bowl_state;
 	int *pitcher_state;
 	int *table_state;
+	char name[NAME_SIZE];
 	pthread_cond_t *cond;
+	pthread_mutex_t *cucumber_m;
+	pthread_mutex_t *cup_m;
 	pthread_mutex_t *bowl_m;
 	pthread_mutex_t *pitcher_m;
 	pthread_mutex_t *table_m;

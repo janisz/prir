@@ -1,42 +1,127 @@
-
 #include "jlib.h"
 
 int parse_arguments(int argc, char **argv);
 int left(int position, int count);
 int right(int position, int count);
 void talk(const char name[]);
-void set_name(char *name, ThreadData data);
+void eat(const ThreadData data);
+void set_name(ThreadData *data);
+
+void print_table_state(ThreadData d)
+{
+	for (int i=0; i<d.people_count; i++)
+		printf("%d", d.table_state[i]);
+	printf(" %s\n", d.name);
+}
+
+void set_table_state_and_broadcast(ThreadData data, int state)
+{
+//	pthread_mutex_lock(data.table_m);
+	data.table_state[data.id] = state;
+//	pthread_cond_broadcast(&data.cond[KING]);
+//	pthread_mutex_unlock(data.table_m);
+}
+
+int can_eat(ThreadData data)
+{
+	if (data.table_state[KING] == IS_TALKING ||
+	    data.table_state[left(data.id, data.people_count)]  > ACTIVE ||
+	    data.table_state[right(data.id, data.people_count)] > ACTIVE) {		
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+int can_talk(ThreadData data)
+{
+	if (data.table_state[KING] == IS_TALKING ||
+	    data.table_state[left(data.id, data.people_count)]  == IS_TALKING ||
+	    data.table_state[right(data.id, data.people_count)] == IS_TALKING) {		
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+int is_last(ThreadData data)
+{
+	return 1;
+	int sum = 0;
+	FOREACH(int *i, data.table_state) {
+		sum += *i;
+	}
+	return sum == 1;
+}
+
+void quit_party(ThreadData data)
+{
+	static int n;
+	set_table_state_and_broadcast(data, UNACTIVE);
+	n++;
+	printf("%s finish %d\n", data.name, n);
+}
 
 void *Knight(void* thread_data)
 {
 	ThreadData data = (*(ThreadData*)thread_data);
-	char name[NAME_SIZE];
-	set_name(name, data);
+	set_name(&data);
+	printf("%s come\n", data.name);
 
-	int round = 0;
-	while (round < MAX_ROUND) {
+	data.round = 0;
+
+#define LEFT  (MIN((data.id), ((data.id+1)%data.people_count)))
+#define RIGHT (MAX((data.id), ((data.id+1)%data.people_count)))
+
+	while (data.round < MAX_ROUND) {
 		int want_to_talk = RANDOM_BOOL;
+		int repeat = 1;
 
-		if (want_to_talk) {
-			pthread_mutex_lock(data.table_m);
-			do {
-				if (RANDOM_BOOL) {
-					talk(name);										
-					pthread_cond_broadcast(data.cond);	
-					break;
-				} else
-					pthread_cond_wait(data.cond, data.table_m);
-			} while (1);					
-			pthread_mutex_unlock(data.table_m);
-		} else {
-			printf("%s eat\n", name);
-			round++;
-		}
+		pthread_mutex_lock(&data.table_m[RIGHT]);
+		pthread_mutex_lock(&data.table_m[LEFT]);
 
+		do {
+			if (!repeat) break;
+			if (want_to_talk && (can_talk(data))) {
+				data.table_state[data.id] = IS_TALKING;
+				talk(data.name);
+				data.table_state[data.id] = ACTIVE;
+				break;
+			} else if (!want_to_talk) {
+
+				pthread_mutex_lock(&data.cup_m[RIGHT]);
+				pthread_mutex_lock(&data.cup_m[LEFT]);
+
+				do {
+					if (can_eat(data)) {
+						data.table_state[data.id] = IS_EATING;
+						data.round++;
+						eat(data);
+						data.table_state[data.id] = ACTIVE;
+						repeat = 0;
+						break;
+					} else {
+						pthread_cond_wait(&data.cond[1], &data.cup_m[LEFT]);
+					}
+				} while (1);
+				pthread_cond_broadcast(&data.cond[1]);
+
+				pthread_mutex_unlock(&data.cup_m[RIGHT]);
+				pthread_mutex_unlock(&data.cup_m[LEFT]);
+
+				if (!repeat) break;
+			} else {
+				pthread_cond_wait(&data.cond[1], &data.table_m[LEFT]);
+			}
+		} while (repeat);
+		pthread_cond_broadcast(&data.cond[1]);
+
+		pthread_mutex_unlock(&data.table_m[RIGHT]);
+		pthread_mutex_unlock(&data.table_m[LEFT]);
 
 	}
 
-	printf("%s finish\n", name);
+	quit_party(data);
 	pthread_exit(NULL);
 }
 
@@ -47,23 +132,43 @@ int main(int argc, char** argv)
 	int bowl_state = people_count / 2;
 	int pitcher_state = people_count / 3;
 	int table_state[people_count];
+
+	for (int i=0; i<people_count; i++)
+		table_state[i] = ACTIVE;
+
 	printf("Party started! There will be %d people\n", people_count);
 
 	ThreadData thread_data[people_count];
-	pthread_cond_t  cond = PTHREAD_COND_INITIALIZER;
-	pthread_mutex_t king_mutex, bowl_mutex, pitcher_mutex, table_mutex;
+	pthread_cond_t cond[people_count];
+	FOREACH(pthread_cond_t *c, cond) {
+		pthread_cond_init(c, NULL);
+	}
+	pthread_mutex_t king_mutex, bowl_mutex, pitcher_mutex;
+	pthread_mutex_t table_mutex[people_count];
+	pthread_mutex_t cucumber_mutex[people_count / 2 +1];
+	pthread_mutex_t cup_mutex[people_count];
 	pthread_t people[people_count];
 
-	pthread_cond_init(&cond, NULL);
+	FOREACH(pthread_mutex_t *t, table_mutex) {
+		pthread_mutex_init(t, NULL);
+	}
+	FOREACH(pthread_mutex_t *t, cucumber_mutex) {
+		pthread_mutex_init(t, NULL);
+	}
+	FOREACH(pthread_mutex_t *t, cup_mutex) {
+		pthread_mutex_init(t, NULL);
+	}
+
 	init_mutex(4, &king_mutex, &bowl_mutex, &pitcher_mutex, &table_mutex);
 
+
 	for (int i=0; i<people_count; i++) {
-		table_state[i] = FALSE;
 		thread_data[i].id = i;
-		thread_data[i].cond = &cond;
+		thread_data[i].cond = cond;
 		thread_data[i].people_count = people_count;
-		thread_data[i].king_m = &king_mutex;
-		thread_data[i].table_m = &table_mutex;
+		thread_data[i].cucumber_m = cucumber_mutex;
+		thread_data[i].cup_m = cup_mutex;
+		thread_data[i].table_m = table_mutex;
 		thread_data[i].bowl_m = &bowl_mutex;
 		thread_data[i].pitcher_m = &pitcher_mutex;
 		thread_data[i].bowl_state = &bowl_state;
@@ -75,20 +180,22 @@ int main(int argc, char** argv)
 	FOREACH(pthread_t *t, people) {
 		pthread_join(*t, NULL);
 	}
+	FOREACH(pthread_cond_t *c, cond) {
+		pthread_cond_destroy(c);
+	}
 
-	pthread_cond_destroy(&cond);
+
 	destroy_mutex(4, &king_mutex, &bowl_mutex, &pitcher_mutex, &table_mutex);
 
 	return 0;
 }
 
-void set_name(char *name, ThreadData data)
+void set_name(ThreadData *data)
 {
-	if (data.id == KING) {
-		strncpy(name, "KING", NAME_SIZE);
+	if (data->id == KING) {
+		strncpy(data->name, "KING", NAME_SIZE);
 	} else {
-		snprintf(name, NAME_SIZE, "Knight #%.3d", data.id);
-		printf("%s come\n", name);
+		snprintf(data->name, NAME_SIZE, "Knight #%.3d", data->id);
 	}
 }
 
@@ -99,7 +206,7 @@ int left(int position, int count)
 
 int right(int position, int count)
 {
-	return (position + count + 1) % count;
+	return (position + 1) % count;
 }
 
 int parse_arguments(int argc, char **argv)
@@ -118,3 +225,14 @@ void talk(const char name[])
 	printf("%s will talk for %d ms\n", name, t);
 	usleep(t * 1000);
 }
+
+void eat(const ThreadData data)
+{
+	const char *suffixes[]= {"th","st","nd","rd"};
+	int t = EATING_TIME;
+	int n = data.round%10 < 4 ? data.round%10 : 0;
+	printf("%s will eat&drink for %d%s time\n", data.name, data.round, suffixes[n]);
+	usleep(t * 1000);
+}
+
+

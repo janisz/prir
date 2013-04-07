@@ -16,14 +16,20 @@ void *Knight(void* thread_data)
 		lock_table_mutex(data);
 		do {
 			if (want_to_talk && (can_talk(data))) {
+				if (data.id == KING) {
+					set_king_state(data, IS_TALKING);
+				}
 				talk(data.name);
+				if (data.id == KING) {
+					set_king_state(data, ACTIVE);
+				}
 				break;
 			} else if (!want_to_talk) {
 				lock_cup_and_plate_mutex(data);
 				wait_for_meal_and_eat(&data);
 				break;
 			} else {
-				pthread_cond_wait(&data.cond[0], &data.table_m[LEFT]);
+				pthread_cond_wait(&data.cond[TALKING_COND], &data.table_m[LEFT]);
 			}
 		} while (repeat);
 		unlock_mutex_and_broadcast(data);
@@ -41,9 +47,24 @@ void wait_for_meal_and_eat(ThreadData *_data)
 			eat(_data);
 			break;
 		} else {
-			pthread_cond_wait(&data.cond[1], &data.cup_m[CUCUMBER]);
+			pthread_cond_wait(&data.cond[EATING_COND], &data.cup_m[CUCUMBER]);
 		}
 	} while (1);
+}
+
+int get_king_state(ThreadData data) 
+{
+	pthread_mutex_lock(data.king_m);
+	int ret = *data.king;
+	pthread_mutex_unlock(data.king_m);
+	return ret;
+}
+
+void set_king_state(ThreadData data, int new_value) 
+{
+	pthread_mutex_lock(data.king_m);
+	*data.king = new_value;
+	pthread_mutex_unlock(data.king_m);
 }
 
 void set_name(ThreadData *data)
@@ -57,12 +78,12 @@ void set_name(ThreadData *data)
 
 int can_eat(ThreadData data)
 {
-	return (*data.king != IS_TALKING);
+	return (get_king_state(data) != IS_TALKING);
 }
 
 int can_talk(ThreadData data)
 {
-	return (*data.king != IS_TALKING);
+	return (get_king_state(data) != IS_TALKING);
 }
 
 void quit_party(ThreadData data)
@@ -70,6 +91,9 @@ void quit_party(ThreadData data)
 	static int n;
 	n++;
 	printf("# %s finish %d\n", data.name, n);
+	if (data.id == KING) {
+		set_king_state(data, UNACTIVE);
+	}
 }
 
 void lock_table_mutex(ThreadData data)
@@ -105,10 +129,10 @@ void unlock_cup_and_plate_mutex(ThreadData data)
 void unlock_mutex_and_broadcast(ThreadData data)
 {
 	for (int i=0; i<data.people_count/2; i++)
-		pthread_cond_signal(&data.cond[1]);
+		pthread_cond_signal(&data.cond[EATING_COND]);
 	unlock_cup_and_plate_mutex(data);
 	for (int i=0; i<data.people_count/2; i++)
-		pthread_cond_signal(&data.cond[0]);
+		pthread_cond_signal(&data.cond[TALKING_COND]);
 	unlock_table_mutex(data);
 }
 
@@ -122,10 +146,10 @@ int take_wine(ThreadData data)
 			(*data.bowl_state) = --n;
 			break;
 		} else {
-			pthread_cond_wait(&data.cond[2], data.bowl_m);
+			pthread_cond_wait(&data.cond[WINE_COND], data.bowl_m);
 		}
 	} while (1);
-	pthread_cond_signal(&data.cond[2]);
+	pthread_cond_signal(&data.cond[WINE_COND]);
 	pthread_mutex_unlock(data.bowl_m);
 	return n;
 }
@@ -140,10 +164,10 @@ int take_cucumber(ThreadData data)
 			(*data.pitcher_state) = --n;
 			break;
 		} else {
-			pthread_cond_wait(&data.cond[3], data.pitcher_m);
+			pthread_cond_wait(&data.cond[CUCUMBER_COND], data.pitcher_m);
 		}
 	} while (1);
-	pthread_cond_signal(&data.cond[3]);
+	pthread_cond_signal(&data.cond[CUCUMBER_COND]);
 	pthread_mutex_unlock(data.pitcher_m);
 	return n;
 }
@@ -156,8 +180,9 @@ void take_food(ThreadData data)
 void talk(const char name[])
 {
 	int t = TALKING_TIME;
-	printf("%s will talk for %d ms\n", name, t);
+	printf("{ %s will talk for %d ms\n", name, t);
 	usleep(t * 1000);
+	printf("} %s stop talking\n", name);
 }
 
 void eat(ThreadData *data)
@@ -167,6 +192,6 @@ void eat(ThreadData *data)
 	const char *suffixes[]= {"th","st","nd","rd"};
 	int t = EATING_TIME;
 	int n = data->round%10 < 4 ? data->round%10 : 0;
-	printf("%s will eat&drink for %d%s time\n", data->name, data->round, suffixes[n]);
+	printf("%s will eat&drink %.2d%s time\n", data->name, data->round, suffixes[n]);
 	usleep(t * 1000);
 }

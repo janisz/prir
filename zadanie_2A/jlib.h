@@ -10,6 +10,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#define TALKING_COND 0
+#define EATING_COND 1
+#define WINE_COND 2
+#define CUCUMBER_COND 3
+#define COND_SIZE 4
+
 #define KING 0
 #define NAME_SIZE 15
 #define NEIGHBORS_COUNT 2

@@ -6,7 +6,6 @@ int parse_arguments(int argc, char **argv);
 
 int main(int argc, char** argv)
 {
-	srand(time(0));
 	int people_count = parse_arguments(argc, argv);
 	int bowl_state = people_count / 2;
 	int pitcher_state = people_count / 3;
@@ -16,16 +15,16 @@ int main(int argc, char** argv)
 
 	ThreadData thread_data[people_count];
 	ThreadData waiter_thread_data;
-	pthread_cond_t cond[people_count];
-	FOREACH(pthread_cond_t *c, cond) {
-		pthread_cond_init(c, NULL);
-	}
+	pthread_cond_t cond[COND_SIZE];
 	pthread_mutex_t king_mutex, bowl_mutex, pitcher_mutex;
 	pthread_mutex_t table_mutex[people_count];
 	pthread_mutex_t cup_mutex[people_count];
 	pthread_t people[people_count];
 	pthread_t waiter;
 
+	FOREACH(pthread_cond_t *c, cond) {
+		pthread_cond_init(c, NULL);
+	}
 	FOREACH(pthread_mutex_t *t, table_mutex) {
 		pthread_mutex_init(t, NULL);
 	}
@@ -34,7 +33,6 @@ int main(int argc, char** argv)
 	}
 
 	init_mutex(3, &king_mutex, &bowl_mutex, &pitcher_mutex);
-
 
 	for (int i=0; i<people_count; i++) {
 		set_thread_data(&thread_data[i], i, people_count, &bowl_state, &pitcher_state, &king, cond, cup_mutex, &bowl_mutex, &pitcher_mutex, table_mutex, &king_mutex);

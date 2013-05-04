@@ -1,5 +1,5 @@
 CC=mpicc
-C_FLAGS=-Wall  -g
+C_FLAGS=-Wall -pedantic -std=c99 -g
 L_FLAGS=-lm -lrt
 HOSTFILE=hosts
 PROGRAM=spies

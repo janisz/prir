@@ -2,7 +2,7 @@ CC=mpicc
 C_FLAGS=-Wall  -g
 L_FLAGS=-lm -lrt
 HOSTFILE=hosts
-PROGRAM=mpi
+PROGRAM=spies
 
 SOURCES=$(wildcard *.c)
 BINARIES=$(SOURCES:%.c=%.c.o)
@@ -20,10 +20,10 @@ $(PROGRAM): $(BINARIES)
 compile: all
 
 run: all
-	mpirun -n $(n) --hostfile ${HOSTFILE} ./${PROGRAM} $(plik)
+	mpirun -n $(n) ./${PROGRAM} $(plik)
 
 debug: 
-	mpirun -n $(n) --debug --hostfile ${HOSTFILE} ./${PROGRAM} $(plik)
+	mpirun -n $(n) --debug ./${PROGRAM} $(plik)
 
 	
 clean:

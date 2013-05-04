@@ -25,6 +25,8 @@ int main( int argc, char *argv[] )
 	int index[vertexs_count];
 	int edges[edges_count];
 	int matrix_graph[vertexs_count * vertexs_count];
+	for (int i=0;i<vertexs_count*vertexs_count;i++)
+		matrix_graph[i] = 0;
 	for (int i=0; i<edges_count;i++) {
 		int from, to;
 		fgets(line, LINE_SIZE, f);
@@ -39,6 +41,30 @@ int main( int argc, char *argv[] )
 		}
 		printf("\n");
 	}
+	
+	int edge_index = 0;
+	for (int i=0; i<vertexs_count;i++) {
+		int neighbours = 0;
+		for (int j=0; j<vertexs_count;j++) {			
+			if (matrix_graph[j*vertexs_count+i] == 1) {
+				neighbours++;
+				edges[edge_index] = j;
+				edge_index++;				
+			}
+		}
+		index[i] = edge_index;
+	}
+	
+	printf("Node \t index \t edges\n");
+	edge_index = 0;
+	for (int i=0; i<vertexs_count;i++) {
+		printf("%d \t %d \t", i, index[i]);
+		int current_index = index[i];
+		for (int i = edge_index; i < current_index; i++)
+			printf("%d ", edges[i]);
+		printf("\n");
+		edge_index = index[i];
+	}	
 	
 	return 0;
 }

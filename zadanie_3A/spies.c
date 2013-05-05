@@ -27,7 +27,7 @@ int main( int argc, char *argv[] )
     MPI_Comm_size( MPI_COMM_WORLD, &size );
     printf( "Hello world from process %d of %d\n", rank, size );
 
-	srand(time(0) * rank);    
+	srand(time(0)*rank);    
 
 
     if (argc != 2) {
@@ -105,7 +105,7 @@ int main( int argc, char *argv[] )
 	printf("#%d has %d neighbors\n", rank, neighbors_count); 
  
 	 
-	if (neighbors_count == 0) {
+	if (!neighbors_count) {
 	
 		Data raport;
 		MPI_Status status;
@@ -116,7 +116,7 @@ int main( int argc, char *argv[] )
 		printf("#%d spying for %d s\n", rank, sleep_time);
 		sleep(sleep_time);
 		
-		raport.time = time(0);
+		raport.time = rand()%100;
 		raport.count = rand()%100;
 		
 		MPI_Wait(&request, &status);
@@ -145,7 +145,7 @@ int main( int argc, char *argv[] )
 		
 		for (int i = 0; i < neighbors_count; i++) {
 			MPI_Isend(&rank, 1, MPI_INT, neighbors[i], REQUEST, comm, &requests[i]);
-			printf("#%d sent raport request to #%d", rank, neighbors[i]);
+			printf("#%d sent raport request to #%d\n", rank, neighbors[i]);
 		}
 		
 		sleep(rand()%6+2);
@@ -167,6 +167,12 @@ int main( int argc, char *argv[] )
 				raport.count = reports[i].count;
 			}
 		}
+		
+		printf("#%d reports:\t", rank);
+		for (int i = 0; i < neighbors_count; i++) {
+			printf("%d %d, ", reports[i].time, reports[i].count);
+		}
+		printf("\n");
 		
 		if (rank) {
 			printf("#%d sent raport to #%d:  %d ; %d\n", rank, status.MPI_SOURCE, raport.time, raport.count);

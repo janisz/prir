@@ -114,12 +114,14 @@ int main( int argc, char *argv[] )
 		MPI_Irecv(&raport, 1, MPI_2INT, MPI_ANY_SOURCE, REQUEST, comm, &request);
 		int sleep_time = rand()%5+3;
 		printf("#%d spying for %d s\n", rank, sleep_time);
-		sleep(sleep_time);
 		
-		raport.time = rand()%100;
-		raport.count = rand()%100;
+		sleep(sleep_time);				
 		
 		MPI_Wait(&request, &status);
+		
+		raport.time = time(0);//rand()%100;
+		raport.count = rand()%100;
+		
 		MPI_Isend(&raport, 1, MPI_2INT, status.MPI_SOURCE, REPORT, comm, &request);
 		printf("#%d sent raport to #%d:  %d ; %d\n", rank, status.MPI_SOURCE, raport.time, raport.count);
 		MPI_Wait(&request, &status);
@@ -157,6 +159,7 @@ int main( int argc, char *argv[] )
 		}
 		
 		MPI_Waitall(neighbors_count, requests, statuses);
+		
 		raport.time = -1;
 		raport.count = -1;
 		

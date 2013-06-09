@@ -92,12 +92,12 @@ int main( int argc, char *argv[] )
 	int token_owner_result = 0;
 	int token_owner_has_played = 0;
 	//Sent want play request to all
-	if (rank == token)	{	/* if we have token */
+	if (rank == token)	{	
 		printf("%d:\t HAVE TOKEN\n", rank);
 		for (int i = 0; i < process_count; i++) {
 		  if (i != rank) {
 			printf("%d:\t Sent mesage to %d\n", rank, i);
-			MPI_Send(&has_played, 1, MPI_INT, i, 0, comm);
+			MPI_Send(&has_played, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
 		  }
 		}		
 	} else	{ /* revive mesage from token owner */				

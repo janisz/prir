@@ -12,7 +12,7 @@
 #define FILENAME_SIZE 20
 #define LINE_SIZE 80
 
-#define MAX_DISTANCE 3
+#define MAX_DISTANCE 9
 
 #define FALSE 0
 #define TRUE (!FALSE)
@@ -35,7 +35,7 @@ int will_play_in_this_turn = FALSE;
 
 int distance(Position a, Position b)
 {
-    return ABS(b.x-a.x) + ABS(b.y-a.y);
+    return (b.x-a.x)*(b.x-a.x) + (b.y-a.y)*(b.y-a.y);
 }
 
 int can_play(int id)

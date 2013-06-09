@@ -41,10 +41,7 @@ int main( int argc, char *argv[] )
 		} else {
 			f = fopen(argv[1], "r");
 		}
-
-		
-
-		
+	
 		if (!f) {
 			MPI_Abort(MPI_COMM_WORLD, 10);
 		}

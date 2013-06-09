@@ -104,23 +104,14 @@ while (sleeping_count != process_count) {
     for (token = 0; token<process_count; token++) {
         int can_token_owner_play = TRUE;
         int token_owner_result = 0;
-        int token_owner_has_played = 0;
-        //Sent want play request to all
-        if (rank == token)	{
-//            printf("%d:\t HAVE TOKEN\n", rank);
-            for (int i = 0; i < process_count; i++) {
-                if (i != rank) {
-//                    printf("%d:\t Sent mesage to %d\n", rank, i);
-                    MPI_Send(&has_played, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-                }
-            }
-        } else	{ /* revive mesage from token owner */
-            MPI_Recv(&token_owner_has_played, 1, MPI_INT, token, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
- //           printf("%d:\t Recive message from %d\n", rank, token);
-            if (!token_owner_has_played) {
-                can_token_owner_play = can_play(token);
-            }
-        }
+        int token_owner_has_played = has_played;
+        
+        MPI_Bcast(&token_owner_has_played, 1, MPI_INT, token, MPI_COMM_WORLD);
+        
+		if (!token_owner_has_played && rank != token) {
+			can_token_owner_play = can_play(token);
+		}
+
 
         MPI_Reduce( &can_token_owner_play, &token_owner_result, 1, MPI_INT, MPI_SUM, token, MPI_COMM_WORLD );		
 

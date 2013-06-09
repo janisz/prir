@@ -7,31 +7,55 @@
 #include <sys/types.h>
 #include <assert.h>
 
+#define ABS(a) (((a) < 0) ? -(a) : (a))
+
 #define FILENAME_SIZE 20
 #define LINE_SIZE 80
 
-#define REQUEST 0
-#define REPORT 1
+#define MAX_DISTANCE 3
+
+#define FALSE 0
+#define TRUE (!FALSE)
+
+#define YES 0
+#define NO 1
+#define PLAY 2
 
 typedef struct {
     int x;
     int y;
 } Position;
 
+Position *positions;   
+int process_count;
 int rank, size;
 MPI_Comm comm;
+int has_played = FALSE;
+int will_play_in_this_turn = FALSE;
+
+int distance(Position a, Position b)
+{
+	return ABS(b.x-a.x) + ABS(b.y-a.y);
+}
+
+int can_play(int id)
+{
+	if (distance(positions[rank], positions[id]) > MAX_DISTANCE)
+	{
+		printf("%d:\t %d is to far", rank, id);
+		return TRUE;
+	}
+	if (id < rank)
+		return TRUE;
+	return will_play_in_this_turn;
+}
 
 int main( int argc, char *argv[] )
 {
     MPI_Init( &argc, &argv );
     MPI_Comm_rank( MPI_COMM_WORLD, &rank );
     MPI_Comm_size( MPI_COMM_WORLD, &size );
-    printf( "Hello world from Jankiel %d of %d\n", rank, size );
-
-	srand(time(0)*rank);   
-	
-	Position *positions;   
-    int process_count;
+    printf( "Hello world from Jankiel %d of %d\n", rank, size );	
 
 	FILE *f;
 	if (argc != 2) {
@@ -60,8 +84,40 @@ int main( int argc, char *argv[] )
 	}
 	
 	fclose(f);
-
-
+	printf( "%d data loaded\n", rank);
+	MPI_Barrier(MPI_COMM_WORLD);
+	
+	int token = 0;
+	int can_token_owner_play = TRUE;
+	int token_owner_result = 0;
+	int token_owner_has_played = 0;
+	//Sent want play request to all
+	if (rank == token)	{	/* if we have token */
+		printf("%d:\t HAVE TOKEN\n", rank);
+		for (int i = 0; i < process_count; i++) {
+		  if (i != rank) {
+			printf("%d:\t Sent mesage to %d\n", rank, i);
+			MPI_Send(&has_played, 1, MPI_INT, i, 0, comm);
+		  }
+		}		
+	} else	{ /* revive mesage from token owner */				
+		MPI_Recv(&token_owner_has_played, 1, MPI_INT, token, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+		printf("%d:\t Recive message from %d\n", rank, token);
+		if (token_owner_has_played) {
+			can_token_owner_play = can_play(token);
+		}
+	}
+	
+	MPI_Barrier(MPI_COMM_WORLD);
+	//MPI_Reduce( &can_token_owner_play, &token_owner_result, 1, MPI_INT, MPI_SUM, token, MPI_COMM_WORLD );
+	
+	printf("%d:\t Token: %d\n", rank, token);
+	printf("%d:\t Has played: %d\n", rank, has_played);
+	printf("%d:\t Can token owner play: %d\n", rank, can_token_owner_play);
+	printf("%d:\t Token owner want to play: %d\n", rank, token_owner_has_played);
+	printf("%d:\t Can play: %d\n", rank, can_play(token));
+	printf("%d:\t Voting result : %d\n", rank, token_owner_result);
+	
     MPI_Finalize();
 
     return 0;

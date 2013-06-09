@@ -41,7 +41,7 @@ int distance(Position a, Position b)
 int can_play(int id)
 {
     if (distance(positions[rank], positions[id]) > MAX_DISTANCE) {
-        printf("%d:\t %d is too far\n", rank, id);
+//        printf("%d:\t %d is too far\n", rank, id);
         return TRUE;
     }
     if (id < rank)
@@ -90,15 +90,24 @@ int main( int argc, char *argv[] )
     fclose(f);
     printf( "%d data loaded\n", rank);
     MPI_Barrier(MPI_COMM_WORLD);
-
+    
+    int sleeping_count = 0;
+    int turn = 0;
+while (sleeping_count != process_count) {
+	turn++;
+	MPI_Barrier(MPI_COMM_WORLD);
+	if (rank == 0) {
+		printf("####\t%d\t####\n", turn);
+	}
     int token = 0;
+    will_play_in_this_turn = FALSE;
     for (token = 0; token<process_count; token++) {
         int can_token_owner_play = TRUE;
         int token_owner_result = 0;
         int token_owner_has_played = 0;
         //Sent want play request to all
         if (rank == token)	{
-            printf("%d:\t HAVE TOKEN\n", rank);
+//            printf("%d:\t HAVE TOKEN\n", rank);
             for (int i = 0; i < process_count; i++) {
                 if (i != rank) {
 //                    printf("%d:\t Sent mesage to %d\n", rank, i);
@@ -119,21 +128,25 @@ int main( int argc, char *argv[] )
 			if (!has_played && token_owner_result == process_count) {
                 will_play_in_this_turn = TRUE;
 			}
-            printf("%d:\t Token: %d\n", rank, token);
+            /*printf("%d:\t Token: %d\n", rank, token);
             printf("%d:\t Has played: %d\n", rank, has_played);
             printf("%d:\t Can token owner play: %d\n", rank, can_token_owner_play);
             printf("%d:\t Token owner want to play: %d\n", rank, token_owner_has_played);
             printf("%d:\t Can play: %d\n", rank, can_play(token));
             printf("%d:\t Voting result : %d\n", rank, token_owner_result);
             printf("%d:\t Will play : %d\n", rank, will_play_in_this_turn);
-
+*/
         }
         MPI_Barrier(MPI_COMM_WORLD);
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    
     if (will_play_in_this_turn)
         printf("%d:\tWILL PLAY\n", rank);
+	
 
+	has_played |= will_play_in_this_turn;
+	MPI_Allreduce( &has_played, &sleeping_count, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD );	
+}
     MPI_Finalize();
 
     return 0;
